@@ -1,0 +1,3 @@
+numpy>=1.24
+# optional: enables LLM-based planning instead of the offline rule-based planner
+anthropic>=0.40 ; python_version >= "3.9"
