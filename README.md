@@ -16,6 +16,16 @@ years in computational physics).
 
 ---
 
+## Two ways to use this repo
+
+If you prefer Python, clone the repo and run the local prototype:
+
+```bash
+python run_demo.py --yes
+```
+
+If you prefer a browser experience, open the GitHub Pages version once the `web/` app is deployed. The browser app is designed to let you explore the same Monte Carlo risk ideas interactively without installing Python.
+
 ## Motivation
 
 This project starts from a simple but real risk question: how do we turn uncertain inputs into a defensible risk output? In practice, you may have multiple plausible distributions, dependencies between drivers, and uncertainty that needs to be propagated all the way through the model. The goal here is to show that workflow end-to-end: choose a distribution, account for dependence when needed, propagate uncertainty with Monte Carlo simulation, and report risk measures such as VaR and CVaR with an audit trail.
@@ -70,6 +80,10 @@ needs no API key and no network. Set `ANTHROPIC_API_KEY` to route planning throu
 LLM with tool-calling instead.
 
 ---
+
+## Model drivers
+
+In this prototype, the final price or price range is mainly driven by the starting price, the drift or mean-reversion level, volatility, jump behavior, and the time horizon. In plain terms: the initial price sets the baseline, volatility widens the range, mean reversion pulls prices toward a long-run level, jumps create spikes or crashes, and a longer horizon gives uncertainty more time to accumulate. If we later extend the model to multiple assets, dependence between drivers will also become a major factor.
 
 ## The Monte Carlo / stochastic layer
 
