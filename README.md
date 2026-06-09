@@ -16,6 +16,10 @@ years in computational physics).
 
 ---
 
+## Motivation
+
+This project starts from a simple but real risk question: how do we turn uncertain inputs into a defensible risk output? In practice, you may have multiple plausible distributions, dependencies between drivers, and uncertainty that needs to be propagated all the way through the model. The goal here is to show that workflow end-to-end: choose a distribution, account for dependence when needed, propagate uncertainty with Monte Carlo simulation, and report risk measures such as VaR and CVaR with an audit trail.
+
 ## What it does
 
 Ask a question in plain language:
@@ -97,8 +101,11 @@ agentic-mc-risk/
 │   ├── risk.py          # VaR / CVaR / CFaR + MC standard error
 │   ├── data.py          # synthetic price data (swap for a governed connector)
 │   └── audit.py         # append-only structured audit log
-└── examples/
-    └── sample_questions.md
+├── examples/
+│   └── sample_questions.md
+├── tests/
+│   └── test_smoke.py
+└── .github/workflows/ci.yml
 ```
 
 ## Run it
