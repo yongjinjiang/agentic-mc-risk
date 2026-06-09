@@ -29,10 +29,39 @@ select {
   gap: 24px;
 }
 
+.hero {
+  display: grid;
+  gap: 12px;
+  padding: 24px 24px 18px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(250,252,255,0.75) 100%);
+  border: 1px solid rgba(78, 110, 158, 0.12);
+  box-shadow: 0 18px 40px rgba(25, 47, 82, 0.08);
+}
+
 .hero h1 {
   margin: 8px 0 12px;
   font-size: clamp(2rem, 4vw, 3.5rem);
   line-height: 1.05;
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.hero-badges span {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d5e1f1;
+  background: rgba(246, 250, 255, 0.96);
+  color: #355373;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  box-shadow: 0 6px 14px rgba(25, 47, 82, 0.04);
 }
 
 .eyebrow,

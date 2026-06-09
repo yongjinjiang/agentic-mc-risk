@@ -68,6 +68,12 @@ app.innerHTML = `
         Adjust the controls, run the simulation, compare scenarios, and inspect how
         model choice, horizon, confidence, and jump behavior affect the risk output.
       </p>
+      <div class="hero-badges" aria-label="demo highlights">
+        <span>Deterministic seeds</span>
+        <span>Preset scenarios</span>
+        <span>CSV export</span>
+        <span>Local Python version available</span>
+      </div>
     </section>
 
     <section class="panel presets" aria-label="scenario presets">

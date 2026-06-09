@@ -16,6 +16,8 @@ years in computational physics).
 
 ---
 
+## Try in browser: [Live demo](https://yongjinjiang.github.io/agentic-mc-risk/)
+
 ## Two ways to use this repo
 
 If you prefer Python, clone the repo and run the local prototype:
