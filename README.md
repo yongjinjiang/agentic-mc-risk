@@ -24,7 +24,7 @@ If you prefer Python, clone the repo and run the local prototype:
 python run_demo.py --yes
 ```
 
-If you prefer a browser experience, open the GitHub Pages version once the `web/` app is deployed. The browser app is designed to let you explore the same Monte Carlo risk ideas interactively without installing Python.
+If you prefer a browser experience, open the GitHub Pages version once the `web/` app is deployed. The browser app includes preset scenarios, charts, and CSV export so you can explore the same Monte Carlo risk ideas interactively without installing Python.
 
 ## Motivation
 

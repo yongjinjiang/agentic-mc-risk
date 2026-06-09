@@ -8,6 +8,50 @@ type Metric = {
   value: string;
 };
 
+type Preset = {
+  name: string;
+  model: ModelType;
+  horizon: number;
+  confidence: number;
+  paths: number;
+  seed: number;
+  position: number;
+  note: string;
+};
+
+const PRESETS: Preset[] = [
+  {
+    name: 'Balanced base case',
+    model: 'ou',
+    horizon: 21,
+    confidence: 0.95,
+    paths: 10000,
+    seed: 42,
+    position: 1000,
+    note: 'Mean reversion with a moderate horizon.',
+  },
+  {
+    name: 'Spike stress',
+    model: 'jump-diffusion',
+    horizon: 21,
+    confidence: 0.99,
+    paths: 15000,
+    seed: 7,
+    position: 1000,
+    note: 'Tail-heavy regime with jumps and higher confidence.',
+  },
+  {
+    name: 'Trend scenario',
+    model: 'gbm',
+    horizon: 63,
+    confidence: 0.95,
+    paths: 12000,
+    seed: 123,
+    position: 1000,
+    note: 'Longer horizon with smooth compounding dynamics.',
+  },
+];
+
 const app = document.querySelector<HTMLDivElement>('#app');
 
 if (!app) {
@@ -21,12 +65,30 @@ app.innerHTML = `
       <h1>Agentic Monte Carlo Risk Workflow</h1>
       <p class="lede">
         Explore a browser-friendly version of the risk simulation prototype.
-        Adjust the controls, run the simulation, and inspect how model choice,
-        horizon, confidence, and jump behavior affect the risk output.
+        Adjust the controls, run the simulation, compare scenarios, and inspect how
+        model choice, horizon, confidence, and jump behavior affect the risk output.
       </p>
     </section>
 
+    <section class="panel presets" aria-label="scenario presets">
+      <div class="panel-head">
+        <div>
+          <p class="section-label">Quick starts</p>
+          <h2>Preset scenarios</h2>
+        </div>
+        <p class="subtle">One click to swap assumptions and rerun.</p>
+      </div>
+      <div class="preset-grid" id="preset-grid"></div>
+    </section>
+
     <section class="panel controls" aria-label="simulation controls">
+      <div class="panel-head">
+        <div>
+          <p class="section-label">Manual controls</p>
+          <h2>Simulation inputs</h2>
+        </div>
+        <p class="subtle">Browser-side Monte Carlo with deterministic seeds.</p>
+      </div>
       <div class="control-grid">
         <label>
           <span>Model</span>
@@ -57,11 +119,20 @@ app.innerHTML = `
           <input id="position-input" type="number" min="1" step="100" value="${DEFAULT_CONFIG.position}" />
         </label>
       </div>
-      <button id="run-btn" type="button">Run simulation</button>
+      <div class="action-row">
+        <button id="run-btn" type="button">Run simulation</button>
+        <button id="export-btn" type="button" class="secondary">Export CSV</button>
+      </div>
     </section>
 
     <section class="panel results" aria-label="simulation results">
-      <h2>Risk summary</h2>
+      <div class="panel-head">
+        <div>
+          <p class="section-label">Output</p>
+          <h2>Risk summary</h2>
+        </div>
+        <p class="subtle">Sample path, tail metrics, and distribution snapshot.</p>
+      </div>
       <div class="metrics" id="metrics"></div>
       <div class="viz-grid">
         <div class="viz-card">
@@ -87,20 +158,21 @@ const pathsInput = document.querySelector<HTMLInputElement>('#paths-input');
 const seedInput = document.querySelector<HTMLInputElement>('#seed-input');
 const positionInput = document.querySelector<HTMLInputElement>('#position-input');
 const runBtn = document.querySelector<HTMLButtonElement>('#run-btn');
+const exportBtn = document.querySelector<HTMLButtonElement>('#export-btn');
 const metricsEl = document.querySelector<HTMLDivElement>('#metrics');
 const statusEl = document.querySelector<HTMLParagraphElement>('#status');
 const pathChartEl = document.querySelector<HTMLDivElement>('#path-chart');
 const histogramChartEl = document.querySelector<HTMLDivElement>('#histogram-chart');
+const presetGridEl = document.querySelector<HTMLDivElement>('#preset-grid');
+
+let latestTerminalPrices: number[] = [];
+let latestPnl: number[] = [];
+let latestSummaryText = '';
 
 const formatMoney = (value: number): string =>
   new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
-  }).format(value);
-
-const formatNumber = (value: number): string =>
-  new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: 2,
   }).format(value);
 
 function renderMetrics(metrics: Metric[]): void {
@@ -163,7 +235,7 @@ function renderHistogram(values: number[]): void {
       <rect x="0" y="0" width="${width}" height="${height}" rx="16" fill="#f8fbff" />
       ${counts
         .map((count, index) => {
-          const barHeight = ((count / maxCount) * (height - 40));
+          const barHeight = (count / maxCount) * (height - 40);
           const x = index * barWidth + 6;
           const y = height - barHeight - 20;
           return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(barWidth - 10).toFixed(1)}" height="${barHeight.toFixed(1)}" rx="6" fill="#5f8cff" opacity="0.85" />`;
@@ -173,6 +245,24 @@ function renderHistogram(values: number[]): void {
       <text x="18" y="42" fill="#637996" font-size="12">max ${formatMoney(max)}</text>
     </svg>
   `;
+}
+
+function setControls(config: {
+  model: ModelType;
+  horizon: number;
+  confidence: number;
+  paths: number;
+  seed: number;
+  position: number;
+}): void {
+  if (modelSelect) modelSelect.value = config.model;
+  if (horizonInput) horizonInput.value = String(config.horizon);
+  if (horizonValue) horizonValue.textContent = String(config.horizon);
+  if (confidenceInput) confidenceInput.value = String(Math.round(config.confidence * 100));
+  if (confidenceValue) confidenceValue.textContent = `${Math.round(config.confidence * 100)}%`;
+  if (pathsInput) pathsInput.value = String(config.paths);
+  if (seedInput) seedInput.value = String(config.seed);
+  if (positionInput) positionInput.value = String(config.position);
 }
 
 function currentConfig() {
@@ -196,6 +286,10 @@ function runSimulation(): void {
   const summary = summarizeRisk(simulation.terminalPrices, DEFAULT_PARAMS.s0, config.position, config.confidence);
   const pnl = simulation.terminalPrices.map((price) => config.position * (price - DEFAULT_PARAMS.s0));
 
+  latestTerminalPrices = simulation.terminalPrices;
+  latestPnl = pnl;
+  latestSummaryText = `Simulated ${config.paths.toLocaleString('en-US')} paths with seed ${config.seed}. Terminal price range: ${formatMoney(Math.min(...simulation.terminalPrices))} to ${formatMoney(Math.max(...simulation.terminalPrices))}.`;
+
   renderMetrics([
     { label: 'Model', value: config.model.replace('-', ' ') },
     { label: 'Horizon', value: `${config.horizon} days` },
@@ -204,6 +298,8 @@ function runSimulation(): void {
     { label: 'Expected P&L', value: formatMoney(summary.expectedPnl) },
     { label: 'VaR', value: formatMoney(summary.var) },
     { label: 'CVaR / ES', value: formatMoney(summary.cvar) },
+    { label: 'Median', value: formatMoney(summary.median) },
+    { label: 'P05 / P95', value: `${formatMoney(summary.p05)} / ${formatMoney(summary.p95)}` },
     { label: 'Seed', value: String(config.seed) },
   ]);
 
@@ -211,11 +307,51 @@ function runSimulation(): void {
   renderHistogram(pnl);
 
   if (statusEl) {
-    statusEl.textContent = `Simulated ${config.paths.toLocaleString('en-US')} paths with seed ${config.seed}. Terminal price range: ${formatMoney(Math.min(...simulation.terminalPrices))} to ${formatMoney(Math.max(...simulation.terminalPrices))}.`;
+    statusEl.textContent = latestSummaryText;
+  }
+}
+
+function exportCsv(): void {
+  if (latestTerminalPrices.length === 0) {
+    runSimulation();
   }
 
-  if (horizonValue) horizonValue.textContent = String(config.horizon);
-  if (confidenceValue) confidenceValue.textContent = `${Math.round(config.confidence * 100)}%`;
+  const config = currentConfig();
+  const rows = [
+    'path_index,terminal_price,pnl',
+    ...latestTerminalPrices.map((price, index) => {
+      const pnl = latestPnl[index] ?? config.position * (price - DEFAULT_PARAMS.s0);
+      return `${index + 1},${price.toFixed(6)},${pnl.toFixed(6)}`;
+    }),
+  ];
+
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `agentic-mc-risk-${config.model}-${config.seed}.csv`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderPresetButtons(): void {
+  if (!presetGridEl) return;
+
+  presetGridEl.innerHTML = PRESETS.map(
+    (preset) => `
+      <button class="preset-btn" type="button" data-preset="${preset.name}">
+        <strong>${preset.name}</strong>
+        <span>${preset.note}</span>
+      </button>
+    `,
+  ).join('');
+
+  presetGridEl.querySelectorAll<HTMLButtonElement>('.preset-btn').forEach((button, index) => {
+    button.addEventListener('click', () => {
+      setControls(PRESETS[index]);
+      runSimulation();
+    });
+  });
 }
 
 horizonInput?.addEventListener('input', () => {
@@ -227,4 +363,8 @@ confidenceInput?.addEventListener('input', () => {
 });
 
 runBtn?.addEventListener('click', runSimulation);
+exportBtn?.addEventListener('click', exportCsv);
+
+renderPresetButtons();
+setControls(DEFAULT_CONFIG);
 runSimulation();
