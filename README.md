@@ -5,7 +5,7 @@ under human-in-the-loop control** — built as a weekend exploration of how agen
 workflows could support an Enterprise Risk team.
 
 It deliberately sits at the intersection of two things: **agentic AI / tool-calling**
-(what I do day-to-day) and **Monte Carlo / stochastic modeling** (the quantitative
+(the kind of system design work I do in practice) and **Monte Carlo / stochastic modeling** (the quantitative
 core of price-uncertainty and financial-loss analysis, and the same math I used for
 years in computational physics).
 
